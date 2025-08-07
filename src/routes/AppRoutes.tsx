@@ -8,7 +8,7 @@ export default function AppRoutes() {
       <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/mecanIA" element={<Chatbot />} />
+      <Route path="/chatbot" element={<Chatbot />} />
       <Route path="*" element={<h1>404 Not Found</h1>} />
     </Routes>
   )
