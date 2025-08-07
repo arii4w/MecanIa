@@ -13,7 +13,7 @@ export default function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (email === 'development_mecanaut@gmail.com' && password === 'mecanaut123') {
-      navigate('/mecanIA')
+      navigate('/chatbot')
     } else {
       alert('Credenciales incorrectas')
     }
