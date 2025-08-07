@@ -1,0 +1,1 @@
+{"root":["./vite.config.ts","./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/features/auth/login.tsx","./src/features/auth/register.tsx","./src/features/auth/index.ts","./src/features/chatbot/chatbot.tsx","./src/features/chatbot/index.ts","./src/routes/approutes.tsx"],"errors":true,"version":"5.8.3"}
