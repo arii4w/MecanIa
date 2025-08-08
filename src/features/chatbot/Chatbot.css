@@ -52,7 +52,7 @@
 }
 
 .chatbot-wrapper {
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
   height: calc(100vh - 40px);
   display: flex;
@@ -65,9 +65,10 @@
   box-shadow: var(--shadow-medium);
   position: relative;
   z-index: 1;
+  transition: all 0.3s ease;
 }
 
-/* Panel Lateral */
+/* Panel Lateral con transición de ancho */
 .sidebar {
   width: 320px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(37, 30, 84, 0.12) 50%, rgba(73, 64, 135, 0.08) 100%);
@@ -80,12 +81,51 @@
   transition: all 0.3s ease;
   backdrop-filter: blur(15px);
   border: 1px solid var(--glass-border);
-  height: calc(100vh - 40px); /* Altura fija para el sidebar */
+  height: calc(100vh - 40px);
+  overflow: hidden;
 }
 
 .sidebar.hidden {
-  transform: translateX(-100%);
+  width: 0;
+  padding: 0;
+  margin-right: -20px; /* Compensar el gap del wrapper */
+  border: none;
   opacity: 0;
+}
+
+/* El main-content se expande cuando el sidebar está oculto */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(37, 30, 84, 0.1) 50%, rgba(73, 64, 135, 0.06) 100%);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s ease;
+  min-width: 400px;
+}
+
+/* Panel de Acciones mantiene su ancho fijo */
+.actions-panel {
+  width: 320px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(37, 30, 84, 0.12) 50%, rgba(73, 64, 135, 0.08) 100%);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: var(--shadow-light);
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  height: calc(100vh - 40px);
+  overflow: hidden;
+  flex-shrink: 0; /* No se encoge */
+}
+
+.actions-panel.hidden {
+  display: none;
 }
 
 /* Logo Section */
@@ -1129,5 +1169,595 @@
 
 .context-menu-item:last-child:hover {
   background: rgba(132, 107, 174, 0.08);
+}
+
+/* Panel de Acciones (Derecho) */
+.actions-panel {
+  width: 320px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(37, 30, 84, 0.12) 50%, rgba(73, 64, 135, 0.08) 100%);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  height: calc(100vh - 40px);
+  overflow: hidden;
+}
+
+.actions-panel.hidden {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.actions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.actions-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-white);
+}
+
+.actions-title h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.toggle-actions-btn {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(132, 107, 174, 0.15) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-white);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.toggle-actions-btn:hover {
+  background: rgba(132, 107, 174, 0.3);
+  transform: scale(1.05);
+}
+
+.actions-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.no-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+  color: var(--text-gray);
+  gap: 16px;
+}
+
+.no-actions-icon {
+  opacity: 0.5;
+}
+
+.no-actions p {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.no-actions span {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.action-item {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(132, 107, 174, 0.15) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-small);
+  padding: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  animation: slideInAction 0.3s ease;
+}
+
+@keyframes slideInAction {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.action-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.action-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.action-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-type-text {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-type-text.create {
+  color: #4ade80;
+}
+
+.action-type-text.update {
+  color: #60a5fa;
+}
+
+.action-type-text.delete {
+  color: #f87171;
+}
+
+.action-type-text.maintenance {
+  color: #fbbf24;
+}
+
+.action-time {
+  font-size: 11px;
+  color: var(--text-gray);
+  opacity: 0.7;
+}
+
+.action-content h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-white);
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.action-content p {
+  font-size: 13px;
+  color: var(--text-gray);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.action-btn.accept {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.2) 0%, rgba(34, 197, 94, 0.15) 100%);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.action-btn.accept:hover {
+  background: rgba(74, 222, 128, 0.3);
+  transform: scale(1.02);
+}
+
+.action-btn.reject {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.2) 0%, rgba(239, 68, 68, 0.15) 100%);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.action-btn.reject:hover {
+  background: rgba(248, 113, 113, 0.3);
+  transform: scale(1.02);
+}
+
+.actions-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.clear-actions-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(132, 107, 174, 0.1) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-gray);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  backdrop-filter: blur(8px);
+}
+
+.clear-actions-btn:hover {
+  background: rgba(132, 107, 174, 0.2);
+  color: var(--text-white);
+}
+
+/* Scrollbar para el panel de acciones */
+.actions-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.actions-content::-webkit-scrollbar-track {
+  background: var(--glass-bg);
+  border-radius: 3px;
+}
+
+.actions-content::-webkit-scrollbar-thumb {
+  background: var(--accent-purple);
+  border-radius: 3px;
+}
+
+.actions-content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-light);
+}
+
+/* Ajustar el wrapper principal para incluir el panel de acciones */
+.chatbot-wrapper {
+  max-width: 1800px; /* Aumentar el ancho máximo */
+  margin: 0 auto;
+  height: calc(100vh - 40px);
+  display: flex;
+  gap: 20px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(37, 30, 84, 0.08) 50%, rgba(73, 64, 135, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-medium);
+  position: relative;
+  z-index: 1;
+}
+
+/* El main-content se expande cuando no hay panel de acciones */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(37, 30, 84, 0.1) 50%, rgba(73, 64, 135, 0.06) 100%);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s ease;
+}
+
+/* Ajustar header para incluir las acciones */
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0%, rgba(37, 30, 84, 0.08) 50%, rgba(73, 64, 135, 0.04) 100%);
+  border-bottom: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px);
+}
+
+.chat-title {
+  flex: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .actions-panel {
+    width: 280px;
+  }
+  
+  .chatbot-wrapper {
+    max-width: 1600px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .actions-panel {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    height: calc(100vh - 40px);
+    z-index: 1000;
+    width: 300px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  .header-actions {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .actions-panel {
+    width: calc(100vw - 40px);
+    right: 20px;
+    left: 20px;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .chat-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    align-self: flex-end;
+    flex-direction: row;
+  }
+}
+
+/* Header actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pending-actions-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pending-count {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  min-width: 20px;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.toggle-actions-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(132, 107, 174, 0.15) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text-white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.toggle-actions-btn:hover {
+  background: rgba(132, 107, 174, 0.3);
+  transform: scale(1.05);
+}
+
+.action-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Panel de Acciones - Ajustar para mostrar/ocultar dinámicamente */
+.actions-panel {
+  width: 320px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(37, 30, 84, 0.12) 50%, rgba(73, 64, 135, 0.08) 100%);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  height: calc(100vh - 40px);
+  overflow: hidden;
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.close-actions-btn {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(132, 107, 174, 0.15) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-white);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.close-actions-btn:hover {
+  background: rgba(248, 113, 113, 0.3);
+  color: #f87171;
+  transform: scale(1.05);
+}
+
+/* Ajustar el wrapper principal para layout dinámico */
+.chatbot-wrapper {
+  max-width: 1800px;
+  margin: 0 auto;
+  height: calc(100vh - 40px);
+  display: flex;
+  gap: 20px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(37, 30, 84, 0.08) 50%, rgba(73, 64, 135, 0.05) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-medium);
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+/* El main-content se expande cuando no hay panel de acciones */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(37, 30, 84, 0.1) 50%, rgba(73, 64, 135, 0.06) 100%);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s ease;
+}
+
+/* Ajustar header para incluir las acciones */
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0%, rgba(37, 30, 84, 0.08) 50%, rgba(73, 64, 135, 0.04) 100%);
+  border-bottom: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px);
+}
+
+.chat-title {
+  flex: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .actions-panel {
+    width: 280px;
+  }
+  
+  .chatbot-wrapper {
+    max-width: 1600px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .actions-panel {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    height: calc(100vh - 40px);
+    z-index: 1000;
+    width: 300px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  .header-actions {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .actions-panel {
+    width: calc(100vw - 40px);
+    right: 20px;
+    left: 20px;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .chat-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    align-self: flex-end;
+    flex-direction: row;
+  }
 }
 
