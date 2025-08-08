@@ -9,6 +9,7 @@
   background: linear-gradient(to top, #9076bc 0%, #36418c 100%);
   overflow: hidden;
   z-index: -2;
+  animation: fadeInBackground 1s ease-out;
 }
 
 /* Efectos de espacio por encima del fondo */
@@ -122,6 +123,36 @@
   }
 }
 
+/* Entrance Animations */
+@keyframes fadeInBackground {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInContainer {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 
 /*==========================================================*/
 
@@ -136,6 +167,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1;
+  animation: fadeInContainer 0.8s ease-out;
 }
 
 /* Formulario con efecto liquid glass */
@@ -145,6 +177,7 @@
   max-width: 90vw;
   position: relative;
   overflow: hidden;
+  animation: slideInUp 0.8s ease-out 0.3s both;
 }
 
 /* Hacer responsive los inputs manteniendo proporciones */
