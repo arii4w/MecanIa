@@ -24,6 +24,16 @@ interface SelectedTag {
   color: string;
 }
 
+interface PendingAction {
+  id: string;
+  title: string;
+  description: string;
+  type: 'update' | 'create' | 'delete' | 'maintenance';
+  data: Record<string, unknown>;
+  timestamp: string;
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
 const Chatbot: React.FC = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [currentChat, setCurrentChat] = useState<Chat | null>(null);
@@ -46,10 +56,13 @@ const Chatbot: React.FC = () => {
   // Etiquetas seleccionadas para mostrar en el input
   const [selectedTags, setSelectedTags] = useState<SelectedTag[]>([]);
   
-  const [deleteProgress, setDeleteProgress] = useState<{ [key: string]: number }>({});
-  const [deleteTimeouts, setDeleteTimeouts] = useState<{ [key: string]: number | null }>({});
-  const [contextMenuOpen, setContextMenuOpen] = useState<string | null>(null);
-  const [showDeleteButton, setShowDeleteButton] = useState<{ [key: string]: boolean }>({});
+  // Estados para el panel de acciones
+  const [actionsVisible, setActionsVisible] = useState(true);
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
+  
+  // Estados simplificados para eliminación
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
   
   // Referencia para el auto-scroll del área de mensajes
   const messagesAreaRef = useRef<HTMLDivElement>(null);
@@ -323,6 +336,83 @@ const Chatbot: React.FC = () => {
     );
   };
 
+  // Función para agregar acciones pendientes (simulación de respuestas del bot)
+  const addPendingAction = (action: Omit<PendingAction, 'id' | 'timestamp' | 'status'>) => {
+    const newAction: PendingAction = {
+      ...action,
+      id: Date.now().toString(),
+      timestamp: new Date().toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      status: 'pending'
+    };
+    setPendingActions(prev => [...prev, newAction]);
+  };
+
+  // Función para aceptar una acción
+  const acceptAction = (actionId: string) => {
+    setPendingActions(prev => 
+      prev.map(action => 
+        action.id === actionId 
+          ? { ...action, status: 'accepted' as const }
+          : action
+      )
+    );
+    
+    // Aquí iría la lógica para enviar al backend
+    console.log('Acción aceptada:', actionId);
+    
+    // Simular respuesta del bot
+    setTimeout(() => {
+      const botResponse: Message = {
+        id: Date.now().toString(),
+        text: 'Perfecto! He ejecutado la acción solicitada. Los cambios han sido aplicados correctamente.',
+        isUser: false,
+        timestamp: new Date().toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit' 
+        })
+      };
+      setMessages(prev => [...prev, botResponse]);
+    }, 1000);
+  };
+
+  // Función para rechazar una acción
+  const rejectAction = (actionId: string) => {
+    setPendingActions(prev => 
+      prev.map(action => 
+        action.id === actionId 
+          ? { ...action, status: 'rejected' as const }
+          : action
+      )
+    );
+    
+    console.log('Acción rechazada:', actionId);
+    
+    // Simular respuesta del bot
+    setTimeout(() => {
+      const botResponse: Message = {
+        id: Date.now().toString(),
+        text: 'Entendido. He cancelado la acción. ¿Te gustaría que proponga una alternativa?',
+        isUser: false,
+        timestamp: new Date().toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit' 
+        })
+      };
+      setMessages(prev => [...prev, botResponse]);
+    }, 1000);
+  };
+
+  // Función para limpiar acciones procesadas
+  const clearProcessedActions = () => {
+    setPendingActions(prev => prev.filter(action => action.status === 'pending'));
+  };
+
+  // Modificar handleSendMessage para simular acciones pendientes
   const handleSendMessage = () => {
     const fullText = getFullMessageText();
     if (fullText.trim()) {
@@ -338,16 +428,16 @@ const Chatbot: React.FC = () => {
       };
       setMessages([...messages, newMessage]);
       setInputMessage('');
-      setSelectedTags([]); // Limpiar etiquetas después de enviar
+      setSelectedTags([]);
       setSelectedLines([]);
       setSelectedPlants([]);
       setSelectedMachines([]);
       
-      // Simular respuesta del bot
+      // Simular respuesta del bot con posibles acciones
       setTimeout(() => {
         const botResponse: Message = {
           id: (Date.now() + 1).toString(),
-          text: 'Gracias por tu mensaje. Estoy procesando tu consulta...',
+          text: 'He analizado tu consulta. Necesito realizar algunos cambios en el sistema para resolver este problema. Te envío las acciones propuestas al panel lateral.',
           isUser: false,
           timestamp: new Date().toLocaleTimeString('es-ES', { 
             hour: '2-digit', 
@@ -356,7 +446,33 @@ const Chatbot: React.FC = () => {
           })
         };
         setMessages(prev => [...prev, botResponse]);
-      }, 1000);
+        
+        // Agregar acciones de ejemplo basadas en el contexto
+        if (fullText.toLowerCase().includes('mantenimiento')) {
+          addPendingAction({
+            title: 'Programar Mantenimiento Preventivo',
+            description: `Programar mantenimiento para ${selectedMachines.length > 0 ? selectedMachines[0] : 'máquinas seleccionadas'} el próximo lunes a las 08:00`,
+            type: 'create',
+            data: { scheduleDate: '2024-01-22', time: '08:00', machines: selectedMachines }
+          });
+        }
+        
+        if (fullText.toLowerCase().includes('problema') || fullText.toLowerCase().includes('falla')) {
+          addPendingAction({
+            title: 'Crear Orden de Trabajo',
+            description: 'Generar orden de trabajo urgente para revisión de componentes críticos',
+            type: 'create',
+            data: { priority: 'high', category: 'repair' }
+          });
+          
+          addPendingAction({
+            title: 'Actualizar Estado de Máquina',
+            description: 'Marcar máquina como "En Mantenimiento" en el sistema',
+            type: 'update',
+            data: { status: 'maintenance', machines: selectedMachines }
+          });
+        }
+      }, 1500);
     }
   };
 
@@ -381,55 +497,38 @@ const Chatbot: React.FC = () => {
     return tagText ? `${tagText} ${inputMessage}` : inputMessage;
   };
 
-  const handleDeleteStart = (chatId: string) => {
-    setDeleteProgress(prev => ({ ...prev, [chatId]: 0 }));
-    
-    const interval = setInterval(() => {
-      setDeleteProgress(prev => {
-        const newProgress = (prev[chatId] || 0) + 2;
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          deleteChat(chatId);
-          return { ...prev, [chatId]: 0 };
-        }
-        return { ...prev, [chatId]: newProgress };
-      });
-    }, 50);
-    
-    setDeleteTimeouts(prev => ({ ...prev, [chatId]: interval }));
+  // Función simplificada para iniciar eliminación
+  const handleDeleteClick = (chat: Chat, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setChatToDelete(chat);
+    setShowDeleteConfirm(chat.id);
   };
 
-  const handleDeleteEnd = (chatId: string) => {
-    if (deleteTimeouts[chatId]) {
-      clearInterval(deleteTimeouts[chatId]);
-      setDeleteTimeouts(prev => {
-        const newTimeouts = { ...prev };
-        delete newTimeouts[chatId];
-        return newTimeouts;
-      });
+  // Función para confirmar eliminación
+  const confirmDeleteChat = () => {
+    if (chatToDelete) {
+      // Simular eliminación del chat
+      console.log('Chat eliminado:', chatToDelete.title);
+      
+      // Si es el chat actual, limpiar selección
+      if (currentChat?.id === chatToDelete.id) {
+        setCurrentChat(null);
+        setMessages([]);
+      }
+      
+      // Aquí iría la lógica real para eliminar del backend
+      // chatHistory = chatHistory.filter(chat => chat.id !== chatToDelete.id);
+      
+      // Limpiar estados
+      setShowDeleteConfirm(null);
+      setChatToDelete(null);
     }
-    setDeleteProgress(prev => ({ ...prev, [chatId]: 0 }));
   };
 
-  const deleteChat = (chatId: string) => {
-    // Aquí iría la lógica para eliminar el chat
-    console.log('Eliminar chat:', chatId);
-    // Limpiar estados
-    setDeleteProgress(prev => {
-      const newProgress = { ...prev };
-      delete newProgress[chatId];
-      return newProgress;
-    });
-    setDeleteTimeouts(prev => {
-      const newTimeouts = { ...prev };
-      delete newTimeouts[chatId];
-      return newTimeouts;
-    });
-    setShowDeleteButton(prev => {
-      const newShow = { ...prev };
-      delete newShow[chatId];
-      return newShow;
-    });
+  // Función para cancelar eliminación
+  const cancelDeleteChat = () => {
+    setShowDeleteConfirm(null);
+    setChatToDelete(null);
   };
 
   const startNewChat = () => {
@@ -437,15 +536,16 @@ const Chatbot: React.FC = () => {
     setMessages([]);
   };
 
-  // Cerrar el menú contextual al hacer clic fuera
+  // Cerrar dropdown y modal al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       if (!target.closest('.multi-selector')) {
         setOpenDropdown(null);
       }
-      if (!target.closest('.chat-item')) {
-        setContextMenuOpen(null);
+      if (!target.closest('.delete-confirm-modal') && !target.closest('.delete-btn')) {
+        setShowDeleteConfirm(null);
+        setChatToDelete(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -492,75 +592,15 @@ const Chatbot: React.FC = () => {
                   </div>
                   <div className="chat-actions">
                     <button 
-                      className="menu-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setContextMenuOpen(contextMenuOpen === chat.id ? null : chat.id);
-                      }}
+                      className="delete-btn simple"
+                      onClick={(e) => handleDeleteClick(chat, e)}
+                      title="Eliminar chat"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="6" r="1.5" fill="currentColor"/>
-                        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-                        <circle cx="12" cy="18" r="1.5" fill="currentColor"/>
+                        <path d="M3 6h18M9 6v12a3 3 0 0 0 6 0V6" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2"/>
                       </svg>
                     </button>
-                    {contextMenuOpen === chat.id && (
-                      <div className="context-menu">
-                        <button
-                          className="context-menu-item"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowDeleteButton(prev => ({ ...prev, [chat.id]: true }));
-                            setContextMenuOpen(null);
-                          }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ marginRight: '8px' }}>
-                            <path d="M3 6h18M9 6v12a3 3 0 0 0 6 0V6" stroke="currentColor" strokeWidth="2"/>
-                            <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2"/>
-                          </svg>
-                          Eliminar chat
-                        </button>
-                        <button
-                          className="context-menu-item"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setContextMenuOpen(null);
-                          }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ marginRight: '8px' }}>
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2"/>
-                          </svg>
-                          Editar
-                        </button>
-                      </div>
-                    )}
-                    {showDeleteButton[chat.id] && (
-                      <button 
-                        className={`delete-btn ${deleteProgress[chat.id] > 0 ? 'deleting' : ''}`}
-                        onMouseDown={() => handleDeleteStart(chat.id)}
-                        onMouseUp={() => handleDeleteEnd(chat.id)}
-                        onMouseLeave={() => handleDeleteEnd(chat.id)}
-                        onTouchStart={() => handleDeleteStart(chat.id)}
-                        onTouchEnd={() => handleDeleteEnd(chat.id)}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {deleteProgress[chat.id] > 0 ? (
-                          <div className="delete-progress">
-                            <div 
-                              className="delete-progress-bar" 
-                              style={{ width: `${deleteProgress[chat.id]}%` }}
-                            ></div>
-                            <span className="delete-text">Mantener para eliminar</span>
-                          </div>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M3 6h18M9 6v12a3 3 0 0 0 6 0V6" stroke="#D7465E" strokeWidth="2"/>
-                            <path d="M10 11v6M14 11v6" stroke="#D7465E" strokeWidth="2"/>
-                          </svg>
-                        )}
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}
@@ -624,6 +664,32 @@ const Chatbot: React.FC = () => {
               </div>
             </div>
             
+            <div className="header-actions">
+              {/* Mostrar contador de acciones pendientes si las hay */}
+              {pendingActions.filter(action => action.status === 'pending').length > 0 && (
+                <div className="pending-actions-indicator">
+                  <span className="pending-count">
+                    {pendingActions.filter(action => action.status === 'pending').length}
+                  </span>
+                </div>
+              )}
+              
+              {/* Botón para mostrar/ocultar panel de acciones */}
+              <button 
+                className="toggle-actions-btn"
+                onClick={() => setActionsVisible(!actionsVisible)}
+                title={actionsVisible ? 'Ocultar panel de acciones' : 'Mostrar panel de acciones'}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                {!actionsVisible && pendingActions.filter(action => action.status === 'pending').length > 0 && (
+                  <span className="action-badge">
+                    {pendingActions.filter(action => action.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Área de Mensajes */}
@@ -760,7 +826,142 @@ const Chatbot: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Panel de Acciones (Derecho) - Siempre visible si actionsVisible es true */}
+        {actionsVisible && (
+          <div className={`actions-panel ${actionsVisible ? 'visible' : 'hidden'}`}>
+            <div className="actions-header">
+              <div className="actions-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                <h2>Panel de Acciones</h2>
+              </div>
+              <button 
+                className="close-actions-btn"
+                onClick={() => setActionsVisible(false)}
+                title="Ocultar panel"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="actions-content">
+              {pendingActions.filter(action => action.status === 'pending').length === 0 ? (
+                <div className="no-actions">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="no-actions-icon">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M8 12H16M12 8V16" stroke="currentColor" strokeWidth="1.5"/>
+                  </svg>
+                  <p>No hay acciones pendientes</p>
+                  <span>Las sugerencias del asistente aparecerán aquí</span>
+                </div>
+              ) : (
+                <div className="actions-list">
+                  {pendingActions.filter(action => action.status === 'pending').map(action => (
+                    <div key={action.id} className="action-item">
+                      <div className="action-header">
+                        <div className="action-type">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            {action.type === 'create' && <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2"/>}
+                            {action.type === 'update' && <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2"/>}
+                            {action.type === 'delete' && <path d="M3 6h18M9 6v12a3 3 0 0 0 6 0V6" stroke="currentColor" strokeWidth="2"/>}
+                            {action.type === 'maintenance' && <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" strokeWidth="2"/>}
+                          </svg>
+                          <span className={`action-type-text ${action.type}`}>
+                            {action.type === 'create' && 'Crear'}
+                            {action.type === 'update' && 'Actualizar'}
+                            {action.type === 'delete' && 'Eliminar'}
+                            {action.type === 'maintenance' && 'Mantenimiento'}
+                          </span>
+                        </div>
+                        <span className="action-time">{action.timestamp}</span>
+                      </div>
+                      
+                      <div className="action-content">
+                        <h3>{action.title}</h3>
+                        <p>{action.description}</p>
+                      </div>
+                      
+                      <div className="action-buttons">
+                        <button 
+                          className="action-btn reject"
+                          onClick={() => rejectAction(action.id)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2"/>
+                          </svg>
+                          Rechazar
+                        </button>
+                        <button 
+                          className="action-btn accept"
+                          onClick={() => acceptAction(action.id)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2"/>
+                          </svg>
+                          Aceptar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {pendingActions.filter(action => action.status !== 'pending').length > 0 && (
+                <div className="actions-footer">
+                  <button 
+                    className="clear-actions-btn"
+                    onClick={clearProcessedActions}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 6h18M9 6v12a3 3 0 0 0 6 0V6" stroke="currentColor" strokeWidth="2"/>
+                    </svg>
+                    Limpiar procesadas
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Modal de Confirmación de Eliminación */}
+      {showDeleteConfirm && chatToDelete && (
+        <div className="modal-overlay">
+          <div className="delete-confirm-modal">
+            <div className="modal-header">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="warning-icon">
+                <path d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18A2 2 0 0 0 3.64 21H20.36A2 2 0 0 0 22.18 18L13.71 3.86A2 2 0 0 0 10.29 3.86Z" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <h3>Eliminar Chat</h3>
+            </div>
+            
+            <div className="modal-content">
+              <p>¿Estás seguro de que quieres eliminar el chat:</p>
+              <span className="chat-title-highlight">"{chatToDelete.title}"</span>
+              <p className="warning-text">Esta acción no se puede deshacer.</p>
+            </div>
+            
+            <div className="modal-actions">
+              <button 
+                className="cancel-btn"
+                onClick={cancelDeleteChat}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="confirm-delete-btn"
+                onClick={confirmDeleteChat}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
