@@ -5,7 +5,7 @@ import { Chatbot } from '../features/chatbot'
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/chatbot" />} />
+      <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/chatbot" element={<Chatbot />} />
