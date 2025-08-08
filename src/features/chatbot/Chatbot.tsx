@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Chatbot.css';
 import logoBlanco from '../../assets/logo_blanco.svg';
 import logoColor from '../../assets/logo_color.svg';
+import loginFirstSvg from '../../assets/login-first.svg'; // Agregar este import
 import { useAuth } from '../../hooks/useAuth'; // Agregar este import
 import { useNavigate } from 'react-router-dom';
 import { chatService } from '../../services/chatService'; // Agregar este import
@@ -145,7 +146,7 @@ const Chatbot: React.FC = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Agregar el hook de autenticación
-  const { logout, user } = useAuth();
+  const { logout, user, isAuthenticated } = useAuth(); // Agregar isAuthenticated
 
   // Función para hacer scroll automático al final del área de mensajes
   const scrollToBottom = () => {
@@ -755,6 +756,47 @@ const Chatbot: React.FC = () => {
     navigate('/login', { replace: true }); // Forzar redirección al login
   };
 
+  // Si no está autenticado, mostrar pantalla de bloqueo
+  if (!isAuthenticated) {
+    return (
+      <div className="chatbot-container">
+        <div className="login-required-overlay">
+          <div className="login-required-content">
+            <div className="login-required-icon">
+              <img src={loginFirstSvg} alt="Login Required" width="119" height="145" />
+            </div>
+            
+            <div className="login-required-text">
+              <h1>Acceso Restringido</h1>
+              <p>Necesitas iniciar sesión para acceder al chatbot de MecanIA</p>
+              <span>Inicia sesión para comenzar a interactuar con tu asistente especializado en maquinaria industrial</span>
+            </div>
+            
+            <button 
+              className="login-required-btn"
+              onClick={() => navigate('/login')}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 17L15 12L10 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M15 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Iniciar Sesión
+            </button>
+            
+            <div className="login-required-footer">
+              <div className="logo-mini">
+                <img src={logoColor} alt="MecanIA" width="32" height="32" />
+                <span>MecanIA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Resto del componente normal cuando está autenticado
   return (
     <div className={`chatbot-container`}>
       <div className="watermark-logo">

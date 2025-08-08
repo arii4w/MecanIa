@@ -1909,3 +1909,307 @@
   padding: 8px 16px;
 }
 
+/* Pantalla de Login Requerido - Liquid Glass Style */
+.login-required-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(109, 160, 225, 0.08) 0%, 
+    rgba(91, 98, 179, 0.12) 30%,
+    rgba(132, 107, 174, 0.1) 60%,
+    rgba(236, 166, 187, 0.08) 100%);
+  backdrop-filter: blur(25px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeInOverlay 0.6s ease-out;
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(25px);
+  }
+}
+
+.login-required-content {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.25) 0%, 
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(245, 245, 255, 0.2) 70%,
+    rgba(255, 255, 255, 0.1) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  padding: 48px 40px;
+  text-align: center;
+  max-width: 480px;
+  width: 90%;
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-large);
+  position: relative;
+  overflow: hidden;
+  animation: slideInFromBottom 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.login-required-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.6) 50%, 
+    transparent 100%);
+}
+
+.login-required-content::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    transparent 70%);
+  opacity: 0.5;
+  animation: shimmer 4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+    opacity: 0.5;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    backdrop-filter: blur(20px);
+  }
+}
+
+.login-required-icon {
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 2;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.login-required-text {
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+.login-required-text h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, 
+    var(--primary) 0%, 
+    var(--primary-light) 50%,
+    var(--accent-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px rgba(91, 98, 179, 0.3);
+}
+
+.login-required-text p {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  line-height: 1.5;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.login-required-text span {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  display: block;
+  opacity: 0.9;
+}
+
+.login-required-btn {
+  background: linear-gradient(135deg, 
+    var(--primary) 0%, 
+    var(--primary-light) 50%,
+    var(--accent-purple) 100%);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-small);
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: var(--shadow-medium);
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.login-required-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.25) 50%, 
+    transparent 100%);
+  transition: left 0.6s ease;
+}
+
+.login-required-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.6) 50%, 
+    transparent 100%);
+}
+
+.login-required-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-large);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.login-required-btn:hover::before {
+  left: 100%;
+}
+
+.login-required-btn:active {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.login-required-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--glass-border);
+  position: relative;
+  z-index: 2;
+}
+
+.logo-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.logo-mini:hover {
+  opacity: 1;
+}
+
+.logo-mini span {
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, 
+    var(--primary) 0%, 
+    var(--accent-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo-mini img {
+  filter: drop-shadow(0 2px 4px rgba(91, 98, 179, 0.2));
+  transition: filter 0.3s ease;
+}
+
+.logo-mini:hover img {
+  filter: drop-shadow(0 4px 8px rgba(91, 98, 179, 0.3));
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .login-required-content {
+    padding: 32px 24px;
+    margin: 20px;
+    border-radius: var(--border-radius-small);
+  }
+  
+  .login-required-text h1 {
+    font-size: 24px;
+  }
+  
+  .login-required-text p {
+    font-size: 16px;
+  }
+  
+  .login-required-btn {
+    padding: 14px 28px;
+    font-size: 15px;
+  }
+}
+
+/* Efectos adicionales para el liquid glass */
+@media (prefers-reduced-motion: no-preference) {
+  .login-required-content {
+    animation: liquidGlass 6s ease-in-out infinite;
+  }
+  
+  @keyframes liquidGlass {
+    0%, 100% {
+      border-radius: var(--border-radius);
+    }
+    33% {
+      border-radius: 28px 20px 28px 20px;
+    }
+    66% {
+      border-radius: 20px 28px 20px 28px;
+    }
+  }
+}
+
