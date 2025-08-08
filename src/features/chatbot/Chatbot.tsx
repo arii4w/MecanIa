@@ -17,6 +17,13 @@ interface Message {
   timestamp: string;
 }
 
+interface SelectedTag {
+  id: string;
+  type: 'line' | 'plant' | 'machine';
+  value: string;
+  color: string;
+}
+
 const Chatbot: React.FC = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [currentChat, setCurrentChat] = useState<Chat | null>(null);
@@ -24,9 +31,21 @@ const Chatbot: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
   //const [language, setLanguage] = useState('ES');
   const [darkMode, setDarkMode] = useState(true);
-  const [selectedLine, setSelectedLine] = useState('');
-  const [selectedPlant, setSelectedPlant] = useState('');
-  const [selectedMachine, setSelectedMachine] = useState('');
+  
+  // Cambiar a arrays para selecciones múltiples
+  const [selectedLines, setSelectedLines] = useState<string[]>([]);
+  const [selectedPlants, setSelectedPlants] = useState<string[]>([]);
+  const [selectedMachines, setSelectedMachines] = useState<string[]>([]);
+  
+  // Estados para los dropdowns con búsqueda
+  const [lineSearch, setLineSearch] = useState('');
+  const [plantSearch, setPlantSearch] = useState('');
+  const [machineSearch, setMachineSearch] = useState('');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  
+  // Etiquetas seleccionadas para mostrar en el input
+  const [selectedTags, setSelectedTags] = useState<SelectedTag[]>([]);
+  
   const [deleteProgress, setDeleteProgress] = useState<{ [key: string]: number }>({});
   const [deleteTimeouts, setDeleteTimeouts] = useState<{ [key: string]: number | null }>({});
   const [contextMenuOpen, setContextMenuOpen] = useState<string | null>(null);
@@ -34,6 +53,7 @@ const Chatbot: React.FC = () => {
   
   // Referencia para el auto-scroll del área de mensajes
   const messagesAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Función para hacer scroll automático al final del área de mensajes
   const scrollToBottom = () => {
@@ -47,7 +67,36 @@ const Chatbot: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Datos de ejemplo
+  // Datos de ejemplo - expandidos para mostrar la funcionalidad de búsqueda
+  const productionLines = [
+    'Línea 1 - Ensamblaje Principal',
+    'Línea 2 - Soldadura Automática', 
+    'Línea 3 - Pintura y Acabado',
+    'Línea 4 - Control de Calidad',
+    'Línea 5 - Empaque Final',
+    'Línea 6 - Proceso Térmico'
+  ];
+  
+  const plants = [
+    'Planta Norte - Producción Principal',
+    'Planta Sur - Manufactura Avanzada',
+    'Planta Este - Logística Central',
+    'Planta Oeste - I+D e Innovación',
+    'Planta Central - Administración',
+    'Planta Industrial - Maquinaria Pesada'
+  ];
+  
+  const machines = [
+    'Máquina CNC-01 - Torno Automático',
+    'Máquina CNC-02 - Fresadora Universal',
+    'Máquina CNC-03 - Centro de Mecanizado',
+    'Máquina CNC-04 - Rectificadora de Precisión',
+    'Robot-01 - Brazo Soldador',
+    'Robot-02 - Manipulador de Carga',
+    'Prensa-01 - Hidráulica 500T',
+    'Prensa-02 - Neumática 200T'
+  ];
+
   const chatHistory: Chat[] = [
     {
       id: '1',
@@ -111,15 +160,175 @@ const Chatbot: React.FC = () => {
     }
   ];
 
-  const productionLines = ['Línea 1', 'Línea 2', 'Línea 3', 'Línea 4'];
-  const plants = ['Planta Norte', 'Planta Sur', 'Planta Este', 'Planta Oeste'];
-  const machines = ['Máquina CNC-01', 'Máquina CNC-02', 'Máquina CNC-03', 'Máquina CNC-04'];
+  // Función para agregar etiquetas al input
+  const addTag = (type: 'line' | 'plant' | 'machine', value: string) => {
+    const colors = {
+      line: '#5560AB',     // primary-light
+      plant: '#846BAE',    // accent-purple  
+      machine: '#A692C1'   // accent-light
+    };
+    
+    const newTag: SelectedTag = {
+      id: `${type}-${Date.now()}`,
+      type,
+      value,
+      color: colors[type]
+    };
+    
+    setSelectedTags(prev => [...prev, newTag]);
+    
+    // Actualizar el estado correspondiente
+    if (type === 'line') {
+      setSelectedLines(prev => [...prev, value]);
+    } else if (type === 'plant') {
+      setSelectedPlants(prev => [...prev, value]);
+    } else if (type === 'machine') {
+      setSelectedMachines(prev => [...prev, value]);
+    }
+    
+    // Limpiar búsqueda y cerrar dropdown
+    if (type === 'line') setLineSearch('');
+    if (type === 'plant') setPlantSearch('');
+    if (type === 'machine') setMachineSearch('');
+    setOpenDropdown(null);
+  };
+
+  // Función para remover etiquetas
+  const removeTag = (tagId: string) => {
+    const tag = selectedTags.find(t => t.id === tagId);
+    if (!tag) return;
+    
+    setSelectedTags(prev => prev.filter(t => t.id !== tagId));
+    
+    // Actualizar el estado correspondiente
+    if (tag.type === 'line') {
+      setSelectedLines(prev => prev.filter(line => line !== tag.value));
+    } else if (tag.type === 'plant') {
+      setSelectedPlants(prev => prev.filter(plant => plant !== tag.value));
+    } else if (tag.type === 'machine') {
+      setSelectedMachines(prev => prev.filter(machine => machine !== tag.value));
+    }
+  };
+
+  // Función para filtrar opciones según la búsqueda
+  const filterOptions = (options: string[], search: string, selected: string[]) => {
+    return options.filter(option => 
+      option.toLowerCase().includes(search.toLowerCase()) && 
+      !selected.includes(option)
+    );
+  };
+
+  // Componente de selector múltiple con búsqueda
+  const MultiSelector: React.FC<{
+    type: 'line' | 'plant' | 'machine';
+    label: string;
+    options: string[];
+    selected: string[];
+    search: string;
+    setSearch: (value: string) => void;
+    placeholder: string;
+  }> = ({ type, label, options, selected, search, setSearch, placeholder }) => {
+    const isOpen = openDropdown === type;
+    const filteredOptions = filterOptions(options, search, selected);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearch(e.target.value);
+      if (!isOpen) {
+        setOpenDropdown(type);
+      }
+    };
+
+    const handleInputClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setOpenDropdown(type);
+    };
+
+    const handleContainerClick = () => {
+      if (!isOpen) {
+        setOpenDropdown(type);
+      }
+    };
+
+    const getDisplayText = () => {
+      if (search && isOpen) {
+        return search;
+      }
+      if (selected.length > 0) {
+        return `${selected.length} seleccionado(s)`;
+      }
+      return '';
+    };
+
+    return (
+      <div className="selector-group">
+        <label>{label}:</label>
+        <div className="multi-selector">
+          <div 
+            className={`selector-input ${isOpen ? 'open' : ''}`}
+            onClick={handleContainerClick}
+          >
+            <input
+              type="text"
+              value={getDisplayText()}
+              onChange={handleInputChange}
+              placeholder={placeholder}
+              className="search-input"
+              onClick={handleInputClick}
+              onFocus={() => setOpenDropdown(type)}
+              readOnly={!isOpen && selected.length > 0}
+            />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className={`dropdown-arrow ${isOpen ? 'open' : ''}`}>
+              <path d="M18 15L12 9L6 15" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          </div>
+          
+          {isOpen && (
+            <div className="dropdown-options">
+              <div className="dropdown-search-container">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={`Buscar ${label.toLowerCase()}...`}
+                  className="dropdown-search-input"
+                  autoFocus
+                />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="search-icon">
+                  <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                  <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </div>
+              
+              <div className="dropdown-options-list">
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map(option => (
+                    <div
+                      key={option}
+                      className="dropdown-option"
+                      onClick={() => addTag(type, option)}
+                    >
+                      {option}
+                    </div>
+                  ))
+                ) : (
+                  <div className="dropdown-option disabled">
+                    {search ? 'No se encontraron resultados' : 'Todas las opciones seleccionadas'}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const handleSendMessage = () => {
-    if (inputMessage.trim()) {
+    const fullText = getFullMessageText();
+    if (fullText.trim()) {
       const newMessage: Message = {
         id: Date.now().toString(),
-        text: inputMessage,
+        text: fullText,
         isUser: true,
         timestamp: new Date().toLocaleTimeString('es-ES', { 
           hour: '2-digit', 
@@ -129,6 +338,10 @@ const Chatbot: React.FC = () => {
       };
       setMessages([...messages, newMessage]);
       setInputMessage('');
+      setSelectedTags([]); // Limpiar etiquetas después de enviar
+      setSelectedLines([]);
+      setSelectedPlants([]);
+      setSelectedMachines([]);
       
       // Simular respuesta del bot
       setTimeout(() => {
@@ -154,12 +367,18 @@ const Chatbot: React.FC = () => {
     }
   };
 
+  // Modificar el handleInputChange para incluir las etiquetas
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputMessage(e.target.value);
-    // Auto-scroll cuando el usuario está escribiendo
     setTimeout(() => {
       scrollToBottom();
     }, 100);
+  };
+
+  // Función para obtener el texto completo incluyendo etiquetas
+  const getFullMessageText = () => {
+    const tagText = selectedTags.map(tag => `@${tag.value}`).join(' ');
+    return tagText ? `${tagText} ${inputMessage}` : inputMessage;
   };
 
   const handleDeleteStart = (chatId: string) => {
@@ -220,8 +439,14 @@ const Chatbot: React.FC = () => {
 
   // Cerrar el menú contextual al hacer clic fuera
   useEffect(() => {
-    const handleClickOutside = () => {
-      setContextMenuOpen(null);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.multi-selector')) {
+        setOpenDropdown(null);
+      }
+      if (!target.closest('.chat-item')) {
+        setContextMenuOpen(null);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -393,9 +618,9 @@ const Chatbot: React.FC = () => {
             <div className="chat-title">
               <h1>{currentChat?.title || 'Nuevo Chat'}</h1>
               <div className="chat-tags">
-                <span className="tag">Línea: {selectedLine || 'Seleccionar'}</span>
-                <span className="tag">Planta: {selectedPlant || 'Seleccionar'}</span>
-                <span className="tag">Maquinaria: {selectedMachine || 'Seleccionar'}</span>
+                <span className="tag">Líneas: {selectedLines.length || 'Ninguna'}</span>
+                <span className="tag">Plantas: {selectedPlants.length || 'Ninguna'}</span>
+                <span className="tag">Máquinas: {selectedMachines.length || 'Ninguna'}</span>
               </div>
             </div>
             
@@ -446,16 +671,43 @@ const Chatbot: React.FC = () => {
             )}
           </div>
 
-          {/* Área de Entrada */}
+          {/* Área de Entrada Modificada */}
           <div className="input-area">
             <div className="input-container">
-              <textarea
-                value={inputMessage}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                placeholder="Describe el problema o haz una pregunta..."
-                className="message-input"
-              />
+              <div className="input-wrapper">
+                {/* Etiquetas seleccionadas */}
+                {selectedTags.length > 0 && (
+                  <div className="input-tags">
+                    {selectedTags.map(tag => (
+                      <div 
+                        key={tag.id} 
+                        className="input-tag"
+                        style={{ backgroundColor: tag.color }}
+                      >
+                        <span>@{tag.value}</span>
+                        <button
+                          className="tag-remove"
+                          onClick={() => removeTag(tag.id)}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <textarea
+                  ref={inputRef}
+                  value={inputMessage}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Describe el problema o haz una pregunta..."
+                  className="message-input"
+                />
+              </div>
+              
               <div className="input-actions">
                 <button className="attachment-btn">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -465,7 +717,7 @@ const Chatbot: React.FC = () => {
                 <button 
                   className="send-btn"
                   onClick={handleSendMessage}
-                  disabled={!inputMessage.trim()}
+                  disabled={!getFullMessageText().trim()}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" strokeWidth="2"/>
@@ -474,49 +726,37 @@ const Chatbot: React.FC = () => {
               </div>
             </div>
             
-            {/* Selectores de Configuración */}
+            {/* Selectores de Configuración Modificados */}
             <div className="config-selectors">
-              <div className="selector-group">
-                <label>Línea de Producción:</label>
-                <select 
-                  value={selectedLine} 
-                  onChange={(e) => setSelectedLine(e.target.value)}
-                  className="config-select"
-                >
-                  <option value="">Seleccionar línea</option>
-                  {productionLines.map(line => (
-                    <option key={line} value={line}>{line}</option>
-                  ))}
-                </select>
-              </div>
+              <MultiSelector
+                type="line"
+                label="Línea de Producción"
+                options={productionLines}
+                selected={selectedLines}
+                search={lineSearch}
+                setSearch={setLineSearch}
+                placeholder="Buscar líneas..."
+              />
               
-              <div className="selector-group">
-                <label>Planta:</label>
-                <select 
-                  value={selectedPlant} 
-                  onChange={(e) => setSelectedPlant(e.target.value)}
-                  className="config-select"
-                >
-                  <option value="">Seleccionar planta</option>
-                  {plants.map(plant => (
-                    <option key={plant} value={plant}>{plant}</option>
-                  ))}
-                </select>
-              </div>
+              <MultiSelector
+                type="plant"
+                label="Planta"
+                options={plants}
+                selected={selectedPlants}
+                search={plantSearch}
+                setSearch={setPlantSearch}
+                placeholder="Buscar plantas..."
+              />
               
-              <div className="selector-group">
-                <label>Maquinaria:</label>
-                <select 
-                  value={selectedMachine} 
-                  onChange={(e) => setSelectedMachine(e.target.value)}
-                  className="config-select"
-                >
-                  <option value="">Seleccionar maquinaria</option>
-                  {machines.map(machine => (
-                    <option key={machine} value={machine}>{machine}</option>
-                  ))}
-                </select>
-              </div>
+              <MultiSelector
+                type="machine"
+                label="Maquinaria"
+                options={machines}
+                selected={selectedMachines}
+                search={machineSearch}
+                setSearch={setMachineSearch}
+                placeholder="Buscar máquinas..."
+              />
             </div>
           </div>
         </div>
