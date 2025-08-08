@@ -3,19 +3,29 @@ import { useNavigate } from 'react-router-dom'
 import styles from './Login.module.css'
 import { FaEye} from "react-icons/fa";
 import { FaEyeSlash } from "react-icons/fa6";
+import { useAuth } from '../../../hooks/useAuth';
 
 export default function Login() {
-  const [email, setEmail] = useState('development_mecanaut@gmail.com')
+  const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('mecanaut123')
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { login, isLoading } = useAuth()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email === 'development_mecanaut@gmail.com' && password === 'mecanaut123') {
+    setError('')
+    
+    try {
+      await login({ username, password })
       navigate('/chatbot')
-    } else {
-      alert('Credenciales incorrectas')
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('Error desconocido al iniciar sesión')
+      }
     }
   }
 
@@ -30,23 +40,24 @@ export default function Login() {
         <div className={styles.loginForm}>
           <div className={styles.formHeader}>
             <h1 className={styles.title}>Iniciar Sesión</h1>
-            <p className={styles.subtitle}>Ingrese su cuenta de Mecanaut</p>
+            <p className={styles.subtitle}>Ingrese su cuenta de MecanIA</p>
           </div>
           
           <form onSubmit={handleSubmit} className={styles.form}>
             <div className={styles.inputGroup}>
-              <label className={styles.label}>Correo Electrónico</label>
+              <label className={styles.label}>Nombre de Usuario</label>
               <div className={styles.inputWrapper}>
               <div className={styles.inputBackLayer} />
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className={styles.input}
+                placeholder="Ingrese su nombre de usuario"
                 required
+                disabled={isLoading}
               />
               </div>
-
 
           <label className={styles.label}>Contraseña</label>
             <div className={styles.inputWrapper}>
@@ -57,12 +68,15 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={styles.input}
+              placeholder="Ingrese su contraseña"
               required
+              disabled={isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className={styles.passwordToggle}
+              disabled={isLoading}
             >
               {showPassword ? <FaEye size={20} /> : <FaEyeSlash size={20} />}
             </button>
@@ -71,8 +85,30 @@ export default function Login() {
 
               </div>
             
-            <button type="submit" className={styles.submitButton}>
-              Iniciar Sesión
+            {error && (
+              <div style={{ 
+                color: '#ff4444', 
+                fontSize: '14px', 
+                marginBottom: '16px',
+                padding: '8px 12px',
+                backgroundColor: 'rgba(255, 68, 68, 0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 68, 68, 0.3)'
+              }}>
+                {error}
+              </div>
+            )}
+            
+            <button 
+              type="submit" 
+              className={styles.submitButton}
+              disabled={isLoading}
+              style={{
+                opacity: isLoading ? 0.7 : 1,
+                cursor: isLoading ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </button>
           </form>
         </div>

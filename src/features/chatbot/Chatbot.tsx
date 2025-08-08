@@ -2,12 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Chatbot.css';
 import logoBlanco from '../../assets/logo_blanco.svg';
 import logoColor from '../../assets/logo_color.svg';
+import { useAuth } from '../../hooks/useAuth'; // Agregar este import
+import { useNavigate } from 'react-router-dom';
+import { chatService } from '../../services/chatService'; // Agregar este import
 
 interface Chat {
   id: string;
   title: string;
   date: string;
   description: string;
+  messages: Message[]; // Agregar mensajes al chat
 }
 
 interface Message {
@@ -35,12 +39,16 @@ interface PendingAction {
 }
 
 const Chatbot: React.FC = () => {
+  const navigate = useNavigate();
+  
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [currentChat, setCurrentChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  //const [language, setLanguage] = useState('ES');
-  const [darkMode, setDarkMode] = useState(true);
+  const [isTyping, setIsTyping] = useState(false); // Agregar este estado
+  
+  // Estados para el historial de chats - AGREGAR ESTOS ESTADOS
+  const [chatHistory, setChatHistory] = useState<Chat[]>([]);
   
   // Cambiar a arrays para selecciones múltiples
   const [selectedLines, setSelectedLines] = useState<string[]>([]);
@@ -58,7 +66,75 @@ const Chatbot: React.FC = () => {
   
   // Estados para el panel de acciones
   const [actionsVisible, setActionsVisible] = useState(true);
-  const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([
+    {
+      id: '1',
+      title: 'Programar Mantenimiento Preventivo',
+      description: 'Programar mantenimiento para Máquina CNC-01 el próximo lunes a las 08:00',
+      type: 'create',
+      data: { 
+        scheduleDate: '2024-01-22', 
+        time: '08:00', 
+        machine: 'CNC-01',
+        priority: 'medium'
+      },
+      timestamp: '14:30',
+      status: 'pending'
+    },
+    {
+      id: '2',
+      title: 'Crear Orden de Trabajo',
+      description: 'Generar orden de trabajo urgente para revisión de componentes críticos en Línea 2',
+      type: 'create',
+      data: { 
+        priority: 'high', 
+        category: 'repair',
+        line: 'Línea 2 - Soldadura Automática',
+        estimatedTime: '4 horas'
+      },
+      timestamp: '14:25',
+      status: 'pending'
+    },
+    {
+      id: '3',
+      title: 'Actualizar Estado de Máquina',
+      description: 'Marcar Prensa-01 como "En Mantenimiento" en el sistema',
+      type: 'update',
+      data: { 
+        status: 'maintenance', 
+        machine: 'Prensa-01 - Hidráulica 500T',
+        reason: 'Fuga detectada en sistema hidráulico'
+      },
+      timestamp: '14:20',
+      status: 'pending'
+    },
+    {
+      id: '4',
+      title: 'Calibración de Sensores',
+      description: 'Ejecutar calibración automática de sensores de precisión en Línea 3',
+      type: 'maintenance',
+      data: { 
+        line: 'Línea 3 - Pintura y Acabado',
+        sensors: ['Sensor-01', 'Sensor-03', 'Sensor-07'],
+        calibrationType: 'automatic'
+      },
+      timestamp: '14:15',
+      status: 'pending'
+    },
+    {
+      id: '5',
+      title: 'Eliminar Registro Obsoleto',
+      description: 'Eliminar registros de temperatura antiguos (>30 días) de la base de datos',
+      type: 'delete',
+      data: { 
+        dataType: 'temperature_logs',
+        cutoffDate: '2023-12-15',
+        affectedRecords: 15420
+      },
+      timestamp: '14:10',
+      status: 'pending'
+    }
+  ]);
   
   // Estados simplificados para eliminación
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -67,6 +143,9 @@ const Chatbot: React.FC = () => {
   // Referencia para el auto-scroll del área de mensajes
   const messagesAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Agregar el hook de autenticación
+  const { logout, user } = useAuth();
 
   // Función para hacer scroll automático al final del área de mensajes
   const scrollToBottom = () => {
@@ -110,68 +189,138 @@ const Chatbot: React.FC = () => {
     'Prensa-02 - Neumática 200T'
   ];
 
-  const chatHistory: Chat[] = [
-    {
-      id: '1',
-      title: 'Problema Máquina CNC-01',
-      date: '15/1/2024',
-      description: 'Ruido extraño en el eje principal...'
-    },
-    {
-      id: '2',
-      title: 'Mantenimiento Preventivo',
-      date: '14/1/2024',
-      description: 'Programación de mantenimiento...'
-    },
-    {
-      id: '3',
-      title: 'Optimización Línea 2',
-      date: '13/1/2024',
-      description: 'Análisis de eficiencia...'
-    },
-    {
-      id: '4',
-      title: 'Diagnóstico Sistema Hidráulico',
-      date: '12/1/2024',
-      description: 'Fuga en tuberías principales...'
-    },
-    {
-      id: '5',
-      title: 'Calibración Sensores',
-      date: '11/1/2024',
-      description: 'Ajuste de precisión en línea 3...'
-    },
-    {
-      id: '6',
-      title: 'Revisión Motor Eléctrico',
-      date: '10/1/2024',
-      description: 'Vibraciones anormales detectadas...'
-    },
-    {
-      id: '7',
-      title: 'Actualización Software',
-      date: '9/1/2024',
-      description: 'Migración a nueva versión...'
-    },
-    {
-      id: '8',
-      title: 'Inspección Cintas Transportadoras',
-      date: '8/1/2024',
-      description: 'Desgaste en rodillos principales...'
-    },
-    {
-      id: '9',
-      title: 'Análisis Consumo Energético',
-      date: '7/1/2024',
-      description: 'Optimización de eficiencia...'
-    },
-    {
-      id: '10',
-      title: 'Reparación Panel de Control',
-      date: '6/1/2024',
-      description: 'Falla en interfaz de usuario...'
+  // Claves para localStorage
+  const CHAT_STORAGE_KEY = 'mecania_chat_history';
+  const CURRENT_CHAT_KEY = 'mecania_current_chat';
+
+  // Función para cargar chats desde localStorage
+  const loadChatsFromStorage = (): Chat[] => {
+    try {
+      const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Error al cargar chats desde localStorage:', error);
+      return [];
     }
-  ];
+  };
+
+  // Función para guardar chats en localStorage
+  const saveChatsToStorage = (chats: Chat[]) => {
+    try {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chats));
+    } catch (error) {
+      console.error('Error al guardar chats en localStorage:', error);
+    }
+  };
+
+  // Función para generar título automático basado en el primer mensaje
+  const generateChatTitle = (firstMessage: string): string => {
+    // Tomar las primeras 50 caracteres y agregar puntos suspensivos si es necesario
+    const title = firstMessage.length > 50 
+      ? firstMessage.substring(0, 47) + '...' 
+      : firstMessage;
+    return title;
+  };
+
+  // Función para crear un nuevo chat
+  const createNewChat = (firstMessage: string, firstResponse: string): Chat => {
+    const now = new Date();
+    const chatId = `chat_${now.getTime()}`;
+    
+    const userMessage: Message = {
+      id: `msg_${now.getTime()}`,
+      text: firstMessage,
+      isUser: true,
+      timestamp: now.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      })
+    };
+
+    const botMessage: Message = {
+      id: `msg_${now.getTime() + 1}`,
+      text: firstResponse,
+      isUser: false,
+      timestamp: new Date(now.getTime() + 1000).toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      })
+    };
+
+    const newChat: Chat = {
+      id: chatId,
+      title: generateChatTitle(firstMessage),
+      date: now.toLocaleDateString('es-ES', { 
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric'
+      }),
+      description: firstMessage.length > 100 
+        ? firstMessage.substring(0, 97) + '...' 
+        : firstMessage,
+      messages: [userMessage, botMessage]
+    };
+
+    return newChat;
+  };
+
+  // Función para actualizar el chat actual con nuevos mensajes
+  const updateCurrentChatMessages = (newMessages: Message[]) => {
+    if (currentChat) {
+      const updatedChat: Chat = {
+        ...currentChat,
+        messages: newMessages
+      };
+      
+      // Actualizar en el estado
+      setCurrentChat(updatedChat);
+      
+      // Actualizar en el historial
+      const updatedHistory = chatHistory.map((chat: Chat) => 
+        chat.id === currentChat.id ? updatedChat : chat
+      );
+      setChatHistory(updatedHistory);
+      saveChatsToStorage(updatedHistory);
+      
+      // Guardar chat actual
+      localStorage.setItem(CURRENT_CHAT_KEY, JSON.stringify(updatedChat));
+    }
+  };
+
+  // Cargar datos al inicializar el componente
+  useEffect(() => {
+    const loadedChats = loadChatsFromStorage();
+    setChatHistory(loadedChats);
+    
+    // Cargar chat actual si existe
+    try {
+      const currentChatStored = localStorage.getItem(CURRENT_CHAT_KEY);
+      if (currentChatStored) {
+        const parsedChat = JSON.parse(currentChatStored);
+        setCurrentChat(parsedChat);
+        setMessages(parsedChat.messages || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar chat actual:', error);
+    }
+  }, []);
+
+  // Actualizar mensajes cuando cambia el chat actual
+  useEffect(() => {
+    if (currentChat) {
+      setMessages(currentChat.messages || []);
+      localStorage.setItem(CURRENT_CHAT_KEY, JSON.stringify(currentChat));
+    }
+  }, [currentChat]);
+
+  // Actualizar chat actual cuando cambian los mensajes
+  useEffect(() => {
+    if (currentChat && messages.length > 0) {
+      updateCurrentChatMessages(messages);
+    }
+  }, [messages]);
 
   // Función para agregar etiquetas al input
   const addTag = (type: 'line' | 'plant' | 'machine', value: string) => {
@@ -413,7 +562,7 @@ const Chatbot: React.FC = () => {
   };
 
   // Modificar handleSendMessage para simular acciones pendientes
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     const fullText = getFullMessageText();
     if (fullText.trim()) {
       const newMessage: Message = {
@@ -426,18 +575,29 @@ const Chatbot: React.FC = () => {
           second: '2-digit' 
         })
       };
-      setMessages([...messages, newMessage]);
+      
+      // Si no hay chat actual, este será el primer mensaje de un nuevo chat
+      const isNewChat = !currentChat;
+      
+      // Agregar mensaje del usuario
+      setMessages(prev => [...prev, newMessage]);
       setInputMessage('');
       setSelectedTags([]);
       setSelectedLines([]);
       setSelectedPlants([]);
       setSelectedMachines([]);
       
-      // Simular respuesta del bot con posibles acciones
-      setTimeout(() => {
+      // Mostrar indicador de escritura
+      setIsTyping(true);
+      
+      try {
+        // Llamar al servicio de chat
+        const response = await chatService.sendMessage(fullText);
+        
+        // Crear respuesta del bot
         const botResponse: Message = {
           id: (Date.now() + 1).toString(),
-          text: 'He analizado tu consulta. Necesito realizar algunos cambios en el sistema para resolver este problema. Te envío las acciones propuestas al panel lateral.',
+          text: response.answer,
           isUser: false,
           timestamp: new Date().toLocaleTimeString('es-ES', { 
             hour: '2-digit', 
@@ -445,34 +605,54 @@ const Chatbot: React.FC = () => {
             second: '2-digit' 
           })
         };
-        setMessages(prev => [...prev, botResponse]);
         
-        // Agregar acciones de ejemplo basadas en el contexto
-        if (fullText.toLowerCase().includes('mantenimiento')) {
-          addPendingAction({
-            title: 'Programar Mantenimiento Preventivo',
-            description: `Programar mantenimiento para ${selectedMachines.length > 0 ? selectedMachines[0] : 'máquinas seleccionadas'} el próximo lunes a las 08:00`,
-            type: 'create',
-            data: { scheduleDate: '2024-01-22', time: '08:00', machines: selectedMachines }
-          });
-        }
-        
-        if (fullText.toLowerCase().includes('problema') || fullText.toLowerCase().includes('falla')) {
-          addPendingAction({
-            title: 'Crear Orden de Trabajo',
-            description: 'Generar orden de trabajo urgente para revisión de componentes críticos',
-            type: 'create',
-            data: { priority: 'high', category: 'repair' }
-          });
+        // Si es un nuevo chat, crearlo
+        if (isNewChat) {
+          const newChat = createNewChat(fullText, response.answer);
           
-          addPendingAction({
-            title: 'Actualizar Estado de Máquina',
-            description: 'Marcar máquina como "En Mantenimiento" en el sistema',
-            type: 'update',
-            data: { status: 'maintenance', machines: selectedMachines }
+          // Actualizar estados
+          setCurrentChat(newChat);
+          setMessages(newChat.messages);
+          
+          // Agregar al historial
+          const updatedHistory = [newChat, ...chatHistory];
+          setChatHistory(updatedHistory);
+          saveChatsToStorage(updatedHistory);
+        } else {
+          // Agregar respuesta del bot al chat existente
+          setMessages(prev => [...prev, botResponse]);
+        }
+        
+        // Procesar acciones si las hay
+        if (response.actions && response.actions.length > 0) {
+          response.actions.forEach((action: unknown) => {
+            addPendingAction({
+              title: (action as { title: string }).title || 'Acción sugerida',
+              description: (action as { description: string }).description || 'El asistente sugiere realizar esta acción',
+              type: (action as { type: 'update' | 'create' | 'delete' | 'maintenance' }).type || 'update',
+              data: (action as { data: Record<string, unknown> }).data || {}
+            });
           });
         }
-      }, 1500);
+        
+      } catch (error) {
+        console.error('Error al enviar mensaje:', error);
+        
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: 'Lo siento, ha ocurrido un error al procesar tu mensaje. Por favor, inténtalo de nuevo.',
+          isUser: false,
+          timestamp: new Date().toLocaleTimeString('es-ES', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+          })
+        };
+        
+        setMessages(prev => [...prev, errorMessage]);
+      } finally {
+        setIsTyping(false);
+      }
     }
   };
 
@@ -504,22 +684,22 @@ const Chatbot: React.FC = () => {
     setShowDeleteConfirm(chat.id);
   };
 
-  // Función para confirmar eliminación
+  // Modificar confirmDeleteChat para eliminar del localStorage
   const confirmDeleteChat = () => {
     if (chatToDelete) {
-      // Simular eliminación del chat
-      console.log('Chat eliminado:', chatToDelete.title);
+      // Eliminar del historial
+      const updatedHistory = chatHistory.filter((chat: Chat) => chat.id !== chatToDelete.id);
+      setChatHistory(updatedHistory);
+      saveChatsToStorage(updatedHistory);
       
       // Si es el chat actual, limpiar selección
       if (currentChat?.id === chatToDelete.id) {
         setCurrentChat(null);
         setMessages([]);
+        localStorage.removeItem(CURRENT_CHAT_KEY);
       }
       
-      // Aquí iría la lógica real para eliminar del backend
-      // chatHistory = chatHistory.filter(chat => chat.id !== chatToDelete.id);
-      
-      // Limpiar estados
+      // Limpiar estados del modal
       setShowDeleteConfirm(null);
       setChatToDelete(null);
     }
@@ -531,9 +711,26 @@ const Chatbot: React.FC = () => {
     setChatToDelete(null);
   };
 
+  // Función para seleccionar un chat del historial
+  const selectChat = (chat: Chat) => {
+    setCurrentChat(chat);
+    setMessages(chat.messages || []);
+    // Limpiar selecciones
+    setSelectedTags([]);
+    setSelectedLines([]);
+    setSelectedPlants([]);
+    setSelectedMachines([]);
+  };
+
+  // Modificar startNewChat para limpiar el chat actual
   const startNewChat = () => {
     setCurrentChat(null);
     setMessages([]);
+    setSelectedTags([]);
+    setSelectedLines([]);
+    setSelectedPlants([]);
+    setSelectedMachines([]);
+    localStorage.removeItem(CURRENT_CHAT_KEY);
   };
 
   // Cerrar dropdown y modal al hacer clic fuera
@@ -552,8 +749,14 @@ const Chatbot: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Función para manejar logout - MODIFICADA
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true }); // Forzar redirección al login
+  };
+
   return (
-    <div className={`chatbot-container ${darkMode ? 'dark' : 'light'}`}>
+    <div className={`chatbot-container`}>
       <div className="watermark-logo">
         <img src={logoColor} alt="MecanIA Watermark" />
       </div>
@@ -579,11 +782,11 @@ const Chatbot: React.FC = () => {
               </button>
             </div>
             <div className="chat-list">
-              {chatHistory.map((chat) => (
+              {chatHistory.map((chat: Chat) => (
                 <div 
                   key={chat.id} 
                   className={`chat-item ${currentChat?.id === chat.id ? 'active' : ''}`}
-                  onClick={() => setCurrentChat(chat)}
+                  onClick={() => selectChat(chat)}
                 >
                   <div className="chat-info">
                     <h3>{chat.title}</h3>
@@ -607,29 +810,24 @@ const Chatbot: React.FC = () => {
             </div>
           </div>
 
-          {/* Configuración */}
+          {/* Configuración - Actualizada con info del usuario y logout */}
           <div className="config-section">
-            <h2>CONFIGURACIÓN</h2>
+            <h2>USUARIO</h2>
             <div className="config-options">
-              <button className="config-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2"/>
-                  <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-                </svg>
-                <span>Perfil</span>
-              </button>
-              {/*
-              <div className="switcher-container">
-                <span>ES/EN</span>
-                <button 
-                  className={`language-switcher ${language === 'ES' ? 'active' : ''}`}
-                  onClick={() => setLanguage(language === 'ES' ? 'EN' : 'ES')}
-                >
-                  <div className="switcher-thumb"></div>
-                </button>
-              </div>*/}
+              <div className="user-info-card">
+                <div className="user-avatar">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                </div>
+                <div className="user-details">
+                  <span className="username">{user?.username}</span>
+                  <span className="user-id">ID: {user?.id}</span>
+                </div>
+              </div>
               
-              <div className="switcher-container">
+              {/*<div className="switcher-container">
                 <span>Modo Oscuro</span>
                 <button 
                   className={`theme-switcher ${darkMode ? 'active' : ''}`}
@@ -637,7 +835,16 @@ const Chatbot: React.FC = () => {
                 >
                   <div className="switcher-thumb"></div>
                 </button>
-              </div>
+              </div>*/}
+
+              <button className="logout-btn" onClick={handleLogout}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="2"/>
+                  <polyline points="16,17 21,12 16,7" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                <span>Cerrar Sesión</span>
+              </button>
             </div>
           </div>
         </div>
@@ -733,6 +940,24 @@ const Chatbot: React.FC = () => {
                     )}
                   </div>
                 ))}
+                
+                {/* Indicador de escritura */}
+                {isTyping && (
+                  <div className="message bot">
+                    <div className="message-avatar">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="currentColor"/>
+                      </svg>
+                    </div>
+                    <div className="message-content typing">
+                      <div className="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
